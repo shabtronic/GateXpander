@@ -1,0 +1,314 @@
+desc:GateExpander
+// (C) 2020 S.D.Smith - All rights reserved
+//
+// strictly non commercial use
+//
+// contact: shabtronic@gmail.com
+//
+// A compressor/expander with noise gate functionality
+// 
+//
+// Implementation Notes:
+//
+// Reaper JS has a max array memory of 8,000,000 Doubles (64mb)
+// Since we have a max delay line of 0.5 secs
+// That gives us (8,000,000-1000)/24000 = 333 delay lines to 
+// play around with @ 48khz
+
+// Unfortunatly with the new slider system
+// you still have to mirror define the old sliders!
+// otherwise their values won't serialize
+
+slider1:threshold=-30<-90,0>-Threshold (db)
+slider2:ratio=30<-250,250>-Ratio
+slider3:knee=1<1,10>-Softness
+slider4:listen=0.5<0,1>-Detect Freq
+slider5:speed=5<1,100>-Detect Speed(ms)
+in_pin:left input
+in_pin:right input
+out_pin:left output
+out_pin:right output
+options:no_meter
+import stronic-lib.js-inc
+
+////////////////////////////////////////////////////////////////////
+@init
+function db2amp(x)
+(
+pow(10.0,(x*dbrange-dbrange)/20.0);
+);
+function amp2db(x)
+(
+x=20*log10(x);
+x=(x+dbrange)/dbrange;
+//min(max(0,x),1);
+x;
+);
+Graph=GetMem(4000);
+XGraph=GetMem(4000);
+InitDelayLines(64,0.75);
+GraphP=0;
+GraphSpeed=srate/300;
+SCount=GraphSpeed;
+dbrange=90;
+AddSliderFloat("Threshold",-30,-90,0,"Hint: Controls the maximum delay line time.");
+AddSliderFloat("Ratio",1,-50,50,"Hint: set the FDN matrix feedback - that's essentially the reverb decay time. Freeze at 100%.");
+AddSliderFloat("Knee",1,1,10,"Hint: set the Allpass filter feedback. This controls the diffusion amount and attack.");
+AddSliderFloat("Freq",0.5,0,1,"Hint: Percentage change each delay line time in the FDN and the Allpass serial array.");
+AddSliderTime("Speed",5,1,100,"Hint: Modulation rate - as the rate increases the depth will automatically decrease.");
+
+////////////////////////////////////////////////////////////////////
+@slider
+//threshhold=slider1;
+//ampthresh=db2amp(threshold);
+//dbthresh=(threshold+dbrange)/dbrange;
+TC=1.0/(2*$pi*(speed/5)/1000); // 40ms
+FC=(TC/srate)/((TC/srate)+1);
+lpfc=(10000/srate)/((10000/srate)+1);
+LPF=listen;
+HS=-1; HW=0;
+LPF<=0.5 ? ( HS=-1; HW=0;);
+LPF>0.5? ( HS=1; LPF-=0.5; HW=1; );
+LPF*=srate;
+LPF<10? LPF=10;
+LPF=(LPF/srate)/((LPF/srate)+1);
+
+////////////////////////////////////////////////////////////////////
+@block
+//ampthresh=db2amp(threshhold);
+zz=threshold;
+ampthresh=db2amp((threshold+dbrange)/dbrange);
+
+dbthresh=(threshold+dbrange)/dbrange;
+TC=1.0/(2*$pi*speed/1000); // 40ms
+FC=(TC/srate)/((TC/srate)+1);
+lpfc=(10000/srate)/((10000/srate)+1);
+dbtop=12;
+dbthreshhystersis=min(1,(threshold+dbtop+dbrange)/dbrange);
+// 0.5-1 = Hipass
+// 0-0.5 = LP
+LPF=listen;
+HS=-1; HW=0;
+LPF<=0.5 ? ( HS=-1; HW=0; );
+LPF>0.5  ? ( HS=1; LPF-=0.5; HW=1; );
+LPF*=srate;
+LPF<10? LPF=10;
+LPF=(LPF/srate)/((LPF/srate)+1);
+////////////////////////////////////////////////////////////////////
+
+@gfx 772 400
+function GateColour()
+(
+  gfx_set(0.4,0.4,0.4,1);
+);
+TitleColour(0.7,0.7,0.7,1); // white
+ValueColour(0.2,0.1,0,1); // orange
+
+FontName="arial";
+FontNameBold=#;
+strcpy(FontNameBold,FontName);
+strcat(FontNameBold," Bold");
+
+//StartGFX(772,392,26,14);    // uncomment this if u want fixed size
+StartGFX(gfx_w,gfx_h,26,15);
+pushcolour(0.25,0.25,0.25,1); // Outline Colour
+pushcolour(0.1,0.0,0.2,1);  // Main panel colour
+gfx_setfont(1,FontName,cell_len*0.5);
+roundrectoutline(0,0,26,15,10,.25);
+pushcolour(0.25,0.25,0.35,1);
+pushcolour(0.5,0.5,1,1);
+gfx_setfont(1,FontNameBold,cell_len*1.5);
+ytoff=1.25;
+xtoff=4.5;
+TextOutline(xtoff,ytoff+1.35,"Gate",9,0.1);
+ratio>0?
+TextOutline(xtoff,ytoff+2.75,"Xpander",9,0.1):
+TextOutline(xtoff,ytoff+2.75,"Compressor",9,0.1);
+gfx_setfont(1,FontNameBold,cell_len/2.5);
+TextOutline(xtoff,ytoff+3,"Version 1.0.02",9,0.1);
+TextOutline(xtoff,ytoff+3.5,"(C) 2020 - all rights reserved",9,0.1);
+//TextOutline(xtoff,ytoff+4,"shabtronic@gmail.com",9,0.13);
+popcolour();
+pushcolour(0.15,0.0,0.3,1);
+gfx_setfont(1,FontName,cell_len*0.65);
+dx=11.5;
+dw=3;
+MediumDial(dx+dw*0,3,0);      // time
+MediumDial(dx+dw*1,3,1);     // Cascade
+MediumDial(dx+dw*2,3,2);      // time
+MediumDial(dx+dw*3,3,3);     // Cascade
+MediumDial(dx+dw*4,3,4);      // time
+bx=20;
+by=gfx_h*0.36;
+bw=(gfx_w-bx)-20;
+bh=(gfx_h-by)-20;
+xthresh=1-(threshold+dbrange)/dbrange;
+xthresh2=1-(threshold+dbtop+dbrange)/dbrange;
+//xthresh=threshold;
+xpeak=(dbPeak);
+sx=0;
+gfx_x=0;
+gfx_y=0;
+
+sg=GraphP-gfx_w;
+sg<0? sg+=4000;
+blendwidth=bw*0.3;
+while (sx<bw)
+  (
+  alpha=1;
+  sx<blendwidth? alpha=sx/blendwidth;
+  sx>(bw-blendwidth)? alpha=(bw-sx)/blendwidth;
+  alpha=sin(alpha*$pi/2);
+  v=1-amp2db(Graph[sg]);
+  sg+=1;
+  sg>4000? sg=0;
+  gfx_set(0.2,0.2,0.5,alpha);
+  gfx_x=bx+sx;
+  gfx_y=by+bh;
+  gfx_lineto(bx+sx,by+v*bh);
+  
+  XGraph[sg]<Graph[sg]?
+   (
+   v=1-amp2db(XGraph[sg]);
+   v2=1-amp2db(Graph[sg]);
+   v2=min(v2,1);
+   v=min(v,1);
+   gfx_x=bx+sx;
+   gfx_y=by+v*bh;
+   GateColour();
+   gfx_a=alpha;
+   gfx_lineto(bx+sx,by+v2*bh);
+   );
+  sx+=1;
+  );
+  sx=0;
+  gfx_set(0,0,0,1);
+  sg=GraphP-gfx_w;
+  sg<0? sg+=4000;
+  while (sx<bw)
+    (
+    v=1-amp2db(XGraph[sg]);
+    v>1?v=1;
+    ThickLine(bx+sx-1,by+lv*bh,bx+sx,by+v*bh,2);
+    lv=v;
+    sx+=1;
+    sg+=1;
+    sg>4000? sg=0;
+    );
+// Draw DB Lines
+gfx_set(1,1,1,01.0525);
+gfx_a=0.124;
+gfx_setfont(1,FontName,cell_len*0.45);
+dby=0;
+while (dby<=1)
+  (
+
+  sy=(dby);
+  gfx_x=bx+22;
+  gfx_y=by+sy*bh;
+  gfx_a=0.124;
+  gfx_lineto(bx+bw,by+sy*bh);
+  ts=#;
+  dby!=0?
+  sprintf(ts,"%d",-dby*90-1)
+    :
+  sprintf(ts,"%d",-dby*90);
+  gfx_a=0.24;
+  TextPixels(bx,by+sy*bh+9,ts,9);
+  dby+=1.0/9;
+  );
+// Draw Threshold Line    
+xdbpeak=1-db2amp(1-xthresh);
+xdbpeak2=1-db2amp(1-(xthresh+dbtop));
+GateColour();
+gfx_x=bx+22;
+gfx_y=by+xthresh*bh;
+gfx_lineto(bx+bw,by+xthresh*bh);
+gfx_a*=0.5;
+gfx_x=bx+22;
+gfx_y=by+xthresh2*bh;
+//gfx_lineto(bx+bw,by+xthresh2*bh);
+
+// Draw Peak Meter
+gfx_set(0,0,0,1);
+//gfx_rect(bx,by+bh-xpeak* bh-4,18,xpeak*bh+4);
+gfx_rect(bx+bw-18,by+bh-xpeak*bh-4,18,xpeak*bh+4);
+gfx_set(0,1,0,0.6);
+gfx_set(0.2,0.2,0.5,1);
+cgain!=1?  GateColour();;
+//gfx_rect(bx+4,by+bh-xpeak*bh,10,xpeak*bh-4);
+gfx_rect(bx+bw-14,by+bh-xpeak*bh,10,xpeak*bh-4);
+
+EndGFX();
+
+
+
+////////////////////////////////////////////////////////////////////
+@sample
+in1=max(abs(spl0),abs(spl1));
+
+in+=(in1-in)*LPF;
+in=(HW*in1)-(HS*in);
+
+Peak*=(1-FC);
+(in)>Peak? Peak=(in);
+dbPeak=((20*log10(Peak))+dbrange)/dbrange;  // Amp to DB
+SCount-=1;
+
+
+
+// Compressor
+ratio<0?
+(
+dbPeak<dbthreshhystersis ?cgain=1;
+cgain=1;
+
+dbPeak>dbthresh ?
+(
+// 0.5 0.25 
+cgain=(Peak/ampthresh);
+cgain<1? cgain=1;
+cgain=pow(cgain,knee);
+amount=((-ratio/50));
+cgain=1+(cgain-1)*amount;
+
+);
+)
+: // Expander
+(
+dbPeak>dbthreshhystersis ?cgain=1;
+dbPeak<dbthresh ?
+(
+// 0.5 0.25 
+cgain=(dbthresh-dbPeak)/dbthresh;
+cgain<0? cgain=0;
+cgain>1? cgain=1;
+cgain=pow(cgain,knee);
+
+cgain=1+(cgain)*ratio;
+cgain>ratio? cgain=ratio;
+//cgain<1? cgain=1;
+);
+);
+out=in/cgain;
+OPeak*=(1-FC);
+(out)>OPeak? OPeak=(out);
+XGraph[GraphP]=(max(XGraph[GraphP],abs(OPeak)));
+Graph[GraphP]=(max(Graph[GraphP],abs(Peak)));
+
+SCount<0?
+(
+SCount=GraphSpeed;
+GraphP+=1;
+GraphP>4000? GraphP=0;
+Graph[GraphP]=0;
+XGraph[GraphP]=0;
+
+);
+abs(out)>PPeak? PPeak=abs(out);
+PPeak*=(1-FC);
+spl0/=cgain;
+spl1/=cgain;
+
+//spl0=in;
+//spl1=in;
