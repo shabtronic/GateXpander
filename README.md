@@ -11,4 +11,4 @@ Reaper JS version:
 
 
 VST3 Version
-![](./Images/GateExpanderVST3.png)
+![](./Images/GateExpanderVst3.png)
