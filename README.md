@@ -25,3 +25,20 @@ For guitar this means the harder you hit the strings the more the sound will fad
 Currently the VST3 presets are broken for some unknown reason.
 
 ![](./Images/GateExpanderVst3.png)
+
+
+How does this work/what does it do?
+
+
+This VST is mainly a downward expander. When the signal level drops below a user defined threshold - it turns the gain down so the signal goes lower. The amount it turns the gain down is directly proportional to the signal value difference from the threshold - so the lower the signal - the more it turns it down. The ratio control also controls the amount it turns the gain down. This works great as a soft noise gate.
+
+What does the compress ratio do?
+
+if the signal rises above the threshold - it will change the gain to make the signal hold at the threshold value.
+
+What does the Knee control do?
+
+It smooths the amount of gain change based on the signal distance from the Threshold value - this stops abrupt changes that cause distortion.
+
+
+
