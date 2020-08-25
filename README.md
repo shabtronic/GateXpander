@@ -22,7 +22,7 @@ by the same amount  - this gives that class "suckback" sound.
 
 For guitar this means the harder you hit the strings the more the sound will fade in - this is great for slow power chord control.
 
-Currently the VST3 presets are broken for some unknown reason.
+Currently the VST3 factory presets are broken for some unknown reason.
 
 ![](./Images/GateExpanderVst3.png)
 
