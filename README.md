@@ -35,9 +35,9 @@ The graph is created with a simple abs-peak-leaky system.
 How does this work/what does it do?
 
 
-This VST is mainly a downward expander. When the signal level drops below a user defined threshold - it turns the gain down so the signal goes lower. The amount it turns the gain down is directly proportional to the signal value difference from the threshold - so the lower the signal - the more it turns it down. The ratio control also controls the amount it turns the gain down. This works great as a soft noise gate.
+This VST is mainly a downward expander. When the signal level drops below a user defined threshold - it turns the gain down so the signal goes lower. The amount it turns the gain down is directly proportional to the signal value difference from the threshold - so the lower the signal - the more it turns it down. The expand control also controls the amount it turns the gain down (this is actually a ratio control). This works great as a soft noise gate.
 
-What does the compress ratio do?
+What does the compress control do?
 
 if the signal rises above the threshold - it will change the gain to make the signal hold at the threshold value.
 
@@ -45,7 +45,7 @@ What does the Knee control do?
 
 It smooths the amount of gain change based on the signal distance from the Threshold value - this stops abrupt changes that cause distortion.
 
-For the Compress Ratio - when the Knee amount is above 0% it will start to mirror the signal about the threshold access - this is super handy for "suckback/pumping" sounds.
+With the Compress control above 0% - when the Knee amount is above 0% it will start to mirror the signal about the threshold access - this is super handy for "suckback/pumping" sounds.
 
 
 
