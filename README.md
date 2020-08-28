@@ -45,5 +45,7 @@ What does the Knee control do?
 
 It smooths the amount of gain change based on the signal distance from the Threshold value - this stops abrupt changes that cause distortion.
 
+For the Compress Ratio - when the Knee amount is above 0% it will start to mirror the signal about the threshold access - this is super handy for "suckback/pumping" sounds.
+
 
 
