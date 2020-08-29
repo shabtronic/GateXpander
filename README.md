@@ -27,7 +27,7 @@ Currently the VST3 factory presets are broken for some unknown reason.
 
 The blue graph is the original signal, the green graph is the processed signal.
 
-The graph is created with a simple abs-peak-leaky system.
+The graph and detector use a simple abs-peak-leaky system.
 
 ![](./Images/GateExpanderVst3.png)
 
